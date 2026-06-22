@@ -1,0 +1,40 @@
+name: Build, Push and Deploy to GKE
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: scotiapoc-migration-demo
+  REGISTRY: us-central1-docker.pkg.dev
+  IMAGE: migration-demo/hello-kubernetes
+  NAMESPACE: atlas-prod
+  CLUSTER: atlas-gke
+  REGION: us-central1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+      - name: Build and push (linux/amd64)
+        run: |
+          docker buildx create --use --platform linux/amd64
+          docker buildx build --platform linux/amd64 \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE }}:latest \
+            --push -f output/Dockerfile .
+      - uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER }}
+          location: ${{ env.REGION }}
+      - name: Helm deploy
+        run: |
+          helm upgrade --install hello-kubernetes output/helm/hello-kubernetes \
+            -n ${{ env.NAMESPACE }} --create-namespace \
+            --set image.tag=${{ github.sha }} --wait --timeout=3m
