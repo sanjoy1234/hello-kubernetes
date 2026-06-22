@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hello-kubernetes
+description: PCF to GKE migration — hello-kubernetes (stateless Node.js demo)
+type: application
+version: 1.0.0
+appVersion: "1.10.1"

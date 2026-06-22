@@ -1,0 +1,28 @@
+replicaCount: 1
+image:
+  repository: us-central1-docker.pkg.dev/scotiapoc-migration-demo/migration-demo/hello-kubernetes
+  tag: "latest"
+  pullPolicy: Always
+service:
+  type: ClusterIP
+  port: 8080
+ingress:
+  enabled: true
+  className: nginx
+  host: hello-kubernetes.atlas-prod.local
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "50m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+config:
+  NODE_ENV: production
+  MESSAGE: "Hello from Scotiabank TAS"
+  PORT: "8080"
+namespace: atlas-prod
